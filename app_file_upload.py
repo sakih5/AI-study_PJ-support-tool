@@ -11,7 +11,7 @@ uploaded_file = st.file_uploader("Wordファイルをアップロードしてく
 if uploaded_file is not None:
     # アップロードされたファイルをDocumentオブジェクトとして読み込む
     doc = Document(BytesIO(uploaded_file.read()))
-
+    print(doc)
     # ドキュメント内のすべてのテキストを結合して表示する
     text = "\n".join([para.text for para in doc.paragraphs])
     
