@@ -1,48 +1,45 @@
 from langchain.text_splitter import SpacyTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
-import spacy
-import openai
+from langchain_core.documents import Document
+
 import pandas as pd
 from pathlib import Path
 import os
 os.environ['OPENAI_API_KEY'] = 'sk-proj-3pSCJqVVn8lRccIMTfXFT3BlbkFJvB0pdZtI3qOHc4EmWKKV'
 
-def chank_texts(input_folder='Input/01 Common'):
-    chanked_texts = {}
+def chank_texts(input_folder='Input/01_Common'):
+    chanked_texts = []
     files = list(Path(input_folder).glob('*.xlsx'))
-    files = [file for file in files if not file.startswith("~$")]
+    files = [file for file in files if not str(file).startswith("~$")]
     print(files)
     for file in files:
         df = pd.read_excel(file)
         df = df.drop(0)
         df = df[['Unnamed: 2', 'Unnamed: 3']].dropna()
         df.columns = ['項目', '概要']
-        print(df)
-        for item in df.to_dict('records'):
-            chanked_texts[item['項目']] = item['概要']
+        chanked_texts = [f'{item["項目"]}:{item["概要"]}' for item in df.to_dict('records')]
     return chanked_texts
 
-def main(input_folder='input'):
-    # ベクトル化させたいデータを作成
-    chanked_texts = chank_texts(input_folder='input')
-    print(chank_texts)
-    # OpenAI Embeddingsを使用してテキストをベクトル化
-    embeddings = OpenAIEmbeddings(model='text-embedding-ada-002')
-    vectors = [embeddings.embed_query(text) for text in chanked_texts]
-
+def main(input_folder):
     # ChromaDBにベクトルデータベースを構築
-    chroma_db = Chroma(persist_directory='./.data',
-                       embedding_function=embeddings,
-                       # collection_name='text_collection'
+    chroma_db = Chroma(
+        collection_name='text_collection',
+        embedding_function=OpenAIEmbeddings(model='text-embedding-ada-002'),
+        persist_directory='./.data',
                        )
-    # chroma_db.add_documents(chanked_texts)
-    # コレクションを追加するための修正
-    for text, vector in zip(chanked_texts, vectors):
-        chroma_db.add_document({"content": text, "embedding": vector})
+    
+    # ベクトル化させたいデータを作成
+    chanked_texts = chank_texts(input_folder)
+
+    # Document インスタンスのリストを作成
+    documents = [Document(page_content=text) for text in chanked_texts]
+
+    # ドキュメントを追加
+    chroma_db.add_documents(documents=documents)
 
     print("ベクトルデータベースがChromaDBに構築されました。")
 
 if __name__ == "__main__":
-    input_folder='Input/01 Common'
+    input_folder='Input/01_Common'
     main(input_folder)
