@@ -25,20 +25,21 @@ def _build_vector_database(df, file):
     
     # ベクトルデータベースにドキュメントを追加)
     for index, row in df.iterrows():
+        print(row['コンテキスト']) # どのチャンクをベクトル化したか確認する用
         text = row['カテゴリ']
         document = Document(
             page_content=text, # カテゴリ名をベクトル化する
             metadata={'context': row['コンテキスト'], # LLMに伝えるコンテキストをメタデータとして追加
-                      'file_path': file,
+                      'file_path': str(file),
                       'file_index': index}
             )
-        chroma_db.add_document(document=document)
+        chroma_db.add_documents(documents=[document])
     print("ベクトルデータベースの更新が完了しました。")
 
 
-def main(input_folder='Input'):
+def main(input_folder=Path('Input')):
     # ベクトル化したいファイルを読み込む
-    files = list(Path(input_folder).glob('*.xlsx'))
+    files = list(input_folder.glob('*.xlsx'))
     files = [file for file in files if not str(file).startswith("~$")]
     print(files)
 
@@ -50,5 +51,5 @@ def main(input_folder='Input'):
 
 
 if __name__ == "__main__":
-    input_folder='Input'
+    input_folder=Path('Input')
     main(input_folder)

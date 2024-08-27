@@ -1,13 +1,12 @@
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_community.embeddings import OpenAIEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
-from langchain.vectorstores import Chroma
+from langchain_community.vectorstores import Chroma
 
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 
 import os
-
 os.environ['OPENAI_API_KEY'] = 'sk-proj-3pSCJqVVn8lRccIMTfXFT3BlbkFJvB0pdZtI3qOHc4EmWKKV'
 
 
@@ -60,8 +59,16 @@ def complete_todo_list(input_text, model_name='gpt-4o-mini'):
     concatenated_text = ""
 
     for line in lines:
-        docs = database.similarity_search(line)
-        print(docs)
+        # 類似チャンクを検索。結果はリスト型(リストの中は(result,score)のタプル)
+        docs = database.similarity_search_with_relevance_scores(line, k=10)
+
+        # スコアがMaxのコンテキストをまとめる
+        contexts = ""
+        init_score = 0
+        for (result, score) in docs:
+            if score >= init_score:
+                contexts = f"{contexts}\n\n・{result.metadata['context']}"
+                init_score = score
 
         # プロンプトテンプレートの定義
         prompt_template = "タスクに業務マニュアルに沿った情報を補完せよ。\
@@ -72,12 +79,12 @@ def complete_todo_list(input_text, model_name='gpt-4o-mini'):
         # メッセージの作成
         messages = [
             SystemMessage(content="あなたはプロジェクトリーダーです。業務マニュアルに沿った補足情報を追加して、部下にわかりやすくタスクを振ることができます。"),
-            HumanMessage(content=prompt_template.format(line=line, context=docs[0].content))
+            HumanMessage(content=prompt_template.format(line=line, context=contexts))
         ]
 
         # 生成AIモデルから返事を取得
         completed_todo = model.invoke(messages)
-        concatenated_text += completed_todo.choices[0].text + "\n"
+        concatenated_text += completed_todo.content + "\n\n"
 
     return concatenated_text
 
@@ -109,3 +116,15 @@ def group_todo_list(input_text, model_name='gpt-4o-mini'):
 
     # AIMessageオブジェクトのcontentを抽出して出力
     return todo_list.content
+
+def search_relevant_manual(query):
+    # ChromaDBへの接続
+    chroma_db = Chroma(
+        collection_name='text_collection',
+        embedding_function=OpenAIEmbeddings(model='text-embedding-ada-002'),
+        persist_directory='./.data'
+    )
+
+    # クエリをベクトル化して検索
+    results = chroma_db.similarity_search_with_relevance_scores(query, k=10)
+    return results

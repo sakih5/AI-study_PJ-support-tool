@@ -18,16 +18,23 @@ st.set_page_config(
 st.sidebar.title("PJサポートツール")
 
 # セレクトボックスのリストを作成
-pages = ["1 マニュアル管理", "2 ToDo抽出", "3 PJチャットボット"]
+pages = ["1 マニュアル管理", "2 ToDo抽出", "3 関連マニュアル検索","4 PJチャットボット"]
+
+# 空のページがないか確認し、空のページがあれば削除する
+pages = [page for page in pages if page.strip()]
+
+# 初期化 - セッションステートでページを管理
+if 'selected_page' not in st.session_state:
+    st.session_state.selected_page = pages[0]
 
 # サイドバーにリンクを表示
 for page in pages:
-    if st.sidebar.button(page):
-        st.experimental_set_query_params(page=page)
+    if st.sidebar.button(label=page):
+        st.session_state.selected_page = page
 
-# クエリパラメータを取得
-query_params = st.experimental_get_query_params()
-selected_page = query_params.get("page", [pages[0]])[0]
+# 現在選択されているページを取得
+selected_page = st.session_state.selected_page
+
 
 # 選択されたページに応じてコンテンツを表示
 # 1 マニュアル管理ページ
@@ -37,16 +44,16 @@ if selected_page == pages[0]:
 
     # データの読み込み
     input_dir = Path("Input")
-    st.markdown(f'<p style="font-size:18px;">1．確認 or 編集したいマニュアルファイルを選択してください', unsafe_allow_html=True)
+    st.markdown(f'<p style="font-size:18px;">1. 確認 or 編集したいマニュアルファイルを選択してください', unsafe_allow_html=True)
     file = st.selectbox('',list(input_dir.glob("*.xlsx")))
     df = pd.read_excel(file)
     cols = df.columns
 
-    st.markdown(f'<p style="font-size:18px;">2．現在のマニュアル:', unsafe_allow_html=True)
+    st.markdown(f'<p style="font-size:18px;">2. 現在のマニュアル:', unsafe_allow_html=True)
     st.table(df)
 
     # 入力フォーム
-    st.markdown(f"<p style='font-size:18px;'>3．新しいマニュアルを入力してください。\
+    st.markdown(f"<p style='font-size:18px;'>3. 新しいマニュアルを入力してください。\
                 \n\n<p style='font-size:18px;'>※カテゴリはリストから選択するか、'その他'を選んで自由入力してください。",
                 unsafe_allow_html=True)
     # テキストボックスを横に並べる
@@ -86,21 +93,26 @@ if selected_page == pages[0]:
         st.success("マニュアルが更新されました！")
 
     # データフレームの表示
-    st.markdown(f'<p style="font-size:18px;">4．更新後のマニュアル:', unsafe_allow_html=True)
+    st.markdown(f'<p style="font-size:18px;">4. 更新後のマニュアル:', unsafe_allow_html=True)
     st.table(df)
+
+    if st.button("マニュアルのベクトルデータベースを更新する"):
+        data_process.main(input_dir)
 
 # 2 ToDo抽出ページ
 elif selected_page == pages[1]:
     st.title(pages[1])
 
     # テキストの入力の仕方を設定
-    st.markdown(f'<p style="font-size:18px;">1．テキストをどう入力しますか？', unsafe_allow_html=True)
+    st.markdown(f'<p style="font-size:18px;">1. テキストをどう入力しますか？', unsafe_allow_html=True)
     option = st.radio('', ('ベタ打ち', 'ファイルアップロード'))
 
     # テキストエリアを表示
     if option == 'ベタ打ち':
         # ユーザーが直接テキストを入力
         user_input = st.text_area("メールや議事録のテキストを入力して:", height=300)
+        # user_inputをテキストファイルとして保存する
+
     elif option == 'ファイルアップロード':
         # ファイルアップロード
         uploaded_file = st.file_uploader("タスクを抽出したいファイル(.docx / .txt)を選択してください", type=["txt", "docx"])
@@ -110,12 +122,15 @@ elif selected_page == pages[1]:
                 user_input = uploaded_file.getvalue().decode("utf-8")
                 st.write("ファイルの内容:")
                 st.text_area("", user_input, height=300)
+                # uploaded_fileを保存する
+
             # docx ファイルの内容を読み取る
             elif uploaded_file.name.endswith('.docx'):
                 doc = docx.Document(uploaded_file)
                 user_input = "\n".join([para.text for para in doc.paragraphs])
                 st.write("ファイルの内容:")
                 st.text_area("", user_input, height=300)
+                # uploaded_fileを保存する
 
     # ToDoリストを作成するボタンが押されたときの処理
     if st.button('ToDoリストを作成する'):
@@ -134,15 +149,37 @@ elif selected_page == pages[1]:
 
     # 保存された結果を表示
     if 'result1' in st.session_state:
-        st.text_area('ToDoリスト:', str(st.session_state.result1), height=300)
+        st.text_area('2. ToDoリスト:', str(st.session_state.result1), height=300)
 
     if 'result2' in st.session_state:
-        st.text_area('ToDoリスト(補完後):', str(st.session_state.result2), height=400)
+        st.text_area('3. ToDoリスト(補完後):', str(st.session_state.result2), height=400)
 
     if 'result3' in st.session_state:
-        st.text_area('ToDoリスト(系統化後):', str(st.session_state.result3), height=400)
+        st.text_area('4. ToDoリスト(系統化後):', str(st.session_state.result3), height=400)
 
-# PJチャットボットページ
+
+# 関連マニュアル検索ページ
 elif selected_page == pages[2]:
     st.title(pages[2])
+    query = st.text_input('ToDoを入力してください:', '')
+    if st.button('関連マニュアルを検索'):
+        results = api_functions.search_relevant_manual(query)
+
+        # 結果の表示
+        if results:
+            st.write(f'検索結果 ({len(results)}件):')
+            for i, (result,score) in enumerate(results):
+                st.write(f'### 結果 {i+1}')
+                st.write(f"**ページ内容**: {result.page_content}")
+                st.write(f"**コンテキスト**: {result.metadata['context']}")
+                st.write(f"**ファイルパス**: {result.metadata['file_path']}")
+                # st.write(f"**ファイルインデックス**: {result.metadata['file_index']}")
+                st.write(f"**類似度スコア**: {score:.4f}")
+        else:
+            st.write('結果が見つかりませんでした。')
+
+
+# PJチャットボットページ
+elif selected_page == pages[3]:
+    st.title(pages[3])
     st.write("PJチャットボットページです。")
