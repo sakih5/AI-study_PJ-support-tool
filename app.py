@@ -7,12 +7,19 @@ import pandas as pd
 import api_functions
 import manual_data_process
 import projectlog_data_process
+import css_style as style
 
+# Streamlitのページ設定
 st.set_page_config(
     page_title="PJサポートツール",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# CSSをStreamlitに反映
+st.markdown(style.button_css, unsafe_allow_html=True)
+st.markdown(style.heading_css, unsafe_allow_html=True)
+st.markdown(style.paragraph_css, unsafe_allow_html=True)
 
 # サイドバーの一番上にタイトルを表示
 st.sidebar.title("PJサポートツール")
@@ -40,22 +47,21 @@ selected_page = st.session_state.selected_page
 # 1 マニュアル管理ページ
 if selected_page == pages[0]:
     st.title(pages[0])
-    st.markdown(f'<p style="font-size:18px;">こちらは、マニュアル管理ページです。', unsafe_allow_html=True)
-
+    st.markdown("<p>こちらは、マニュアル管理ページです。\n\nマニュアルの追加・削除ができます。</p>", unsafe_allow_html=True)
     # データの読み込み
     input_dir = Path("Input")
-    st.markdown(f'<p style="font-size:18px;">1. 確認 or 編集したいマニュアルファイルを選択してください', unsafe_allow_html=True)
+    st.markdown("<h2>1. 確認 or 編集したいマニュアルファイルを選択してください。</h2>", unsafe_allow_html=True)
+    
     file = st.selectbox('',list(input_dir.glob("*.xlsx")))
     df = pd.read_excel(file)
     cols = df.columns
 
-    st.markdown(f'<p style="font-size:18px;">2. 現在のマニュアル:', unsafe_allow_html=True)
+    st.markdown("<h2>2. 現在のマニュアルはこちらです。</h2>", unsafe_allow_html=True)
     st.table(df)
 
     # 入力フォーム
-    st.markdown(f"<p style='font-size:18px;'>3. 新しいマニュアルを入力してください。\
-                \n\n<p style='font-size:18px;'>※カテゴリはリストから選択するか、'その他'を選んで自由入力してください。",
-                unsafe_allow_html=True)
+    st.markdown("<h2>3. 新しいマニュアルを入力してください。</h2>", unsafe_allow_html=True)
+    st.markdown("<p>※カテゴリはリストから選択するか、'その他'を選んで自由入力してください。</p>", unsafe_allow_html=True)
     # テキストボックスを横に並べる
     col1, col2 = st.columns(2)
     with col1:
@@ -93,7 +99,7 @@ if selected_page == pages[0]:
         st.success("マニュアルが更新されました！")
 
     # データフレームの表示
-    st.markdown(f'<p style="font-size:18px;">4. 更新後のマニュアル:', unsafe_allow_html=True)
+    st.markdown("<h2>4. 更新後のマニュアルはこちらです。</h2>", unsafe_allow_html=True)
     st.table(df)
 
     if st.button("マニュアルのベクトルデータベースを更新する"):
@@ -105,20 +111,19 @@ elif selected_page == pages[1]:
     st.title(pages[1])
 
     # テキストの入力の仕方を設定
-    st.markdown(f'<p style="font-size:18px;">1. テキストをどう入力しますか？', unsafe_allow_html=True)
-    option = st.radio('', ('ベタ打ち', 'ファイルアップロード'))
+    option = st.radio('1. テキストをどう入力しますか？', ('ベタ打ち', 'ファイルアップロード'))
 
     # テキストエリアを表示
     if option == 'ベタ打ち':
         # ユーザーが直接テキストを入力
-        user_input = st.text_area("メールや議事録のテキストを入力して:", height=300)
+        user_input = st.text_area("メールや議事録のテキストを入力してください。:", height=300)
 
         # user_inputをテキストファイルとして保存する
         save_path = projectlog_data_process.save_raw_data(user_input)
 
     elif option == 'ファイルアップロード':
         # ファイルアップロード
-        uploaded_file = st.file_uploader("タスクを抽出したいファイル(.docx / .txt)を選択してください", type=["txt", "docx"])
+        uploaded_file = st.file_uploader("タスクを抽出したいファイル(.docx / .txt)を選択してください。", type=["txt", "docx"])
         if uploaded_file is not None:
             # txt ファイルの内容を読み取る
             if uploaded_file.name.endswith('.txt'):

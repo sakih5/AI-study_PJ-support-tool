@@ -22,7 +22,7 @@ def _build_vector_database(df, file):
         embedding_function=OpenAIEmbeddings(model='text-embedding-ada-002'),
         persist_directory='./.data',
         )
-    
+
     # ベクトルデータベースにドキュメントを追加)
     for index, row in df.iterrows():
         print(row['コンテキスト']) # どのチャンクをベクトル化したか確認する用

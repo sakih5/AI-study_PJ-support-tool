@@ -15,7 +15,7 @@ chroma_db = Chroma(
 )
 
 # Langchainの設定
-llm = OpenAI(model_name="text-davinci-003")
+llm = OpenAI(model_name="gpt-3.5-turbo-instruct")
 memory = ConversationBufferMemory()
 conversation = ConversationChain(llm=llm, memory=memory)
 
