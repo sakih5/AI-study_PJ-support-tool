@@ -1,0 +1,7 @@
+streamlit
+langchain-community
+langchain-openai
+langchian-anthropic
+langchain-chroma
+python-docx
+openpyxl

@@ -58,16 +58,17 @@ def _build_vector_database(chunks, save_path):
     chroma_db = Chroma(
         collection_name='projectlog_collection',
         embedding_function=OpenAIEmbeddings(model='text-embedding-ada-002'),
-        persist_directory='./.data',
-        )
-    
+        persist_directory='./.data_projectlog',
+    )
+
     # ベクトルデータベースにドキュメントを追加)
     for idx, chunk in enumerate(chunks):
         print(chunk) # どのチャンクをベクトル化したか確認する用
         document = Document(
             page_content=chunk, # チャンクをベクトル化する
-            metadata={'file_path': str(save_path),
-                      'idx': idx}
+            metadata={
+                'file_path': str(save_path),
+                'idx': idx}
             )
         chroma_db.add_documents(documents=[document])
     print("ベクトルデータベースの更新が完了しました。")

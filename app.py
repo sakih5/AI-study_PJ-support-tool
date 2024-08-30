@@ -22,7 +22,7 @@ st.markdown(style.heading_css, unsafe_allow_html=True)
 st.markdown(style.paragraph_css, unsafe_allow_html=True)
 
 # サイドバーの一番上にタイトルを表示
-st.sidebar.title("PJサポートツール")
+st.sidebar.markdown("<h2>PJサポートツール</h2>", unsafe_allow_html=True)
 
 # セレクトボックスのリストを作成
 pages = ["1 マニュアル管理", "2 ToDo抽出", "3 関連マニュアル検索","4 PJチャットボット"]
@@ -83,8 +83,10 @@ if selected_page == pages[0]:
                        cols[1]: new_value1,
                        cols[2]: new_value2
                        }
+            # 新しい行を追加するためにDataFrameを作成
+            new_row_df = pd.DataFrame([new_row])
             # テーブルに新しい行を追加
-            df = df.append(new_row, ignore_index=True)
+            df = pd.concat([df, new_row_df], ignore_index=True)
             # カテゴリでソート
             df = df.sort_values(by=cols[1], ascending=True).reset_index(drop=True)
 
@@ -104,6 +106,7 @@ if selected_page == pages[0]:
 
     if st.button("マニュアルのベクトルデータベースを更新する"):
         manual_data_process.build_vector_database(input_dir)
+        st.success("ベクトルデータベースが更新されました！")
 
 
 # 2 ToDo抽出ページ
@@ -188,7 +191,36 @@ elif selected_page == pages[3]:
     st.title(pages[3])
     st.write("PJチャットボットページです。")
 
+    st.markdown("<h2>Project logのベクトルデータベースを更新してください。</h2>", unsafe_allow_html=True)
     if st.button("Project logのベクトルデータベースを更新する"):
         projectlog_data_process.build_vector_database()
 
-    
+    # (LLM)チャットメモリの初期化 ←if文に入れておくことでセッション間は1度しか実行されない
+    if "memory" not in st.session_state:
+        memory = api_functions.init_memory()
+        st.session_state.memory = memory
+
+    # (UI)会話履歴を初期化
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # (UI)チャット入力ボックスを表示
+    user_input = st.chat_input("Ask something about the file.")
+    if user_input:
+        if "memory" in st.session_state:
+            # (LLM)メモリに基づく返答の作成
+            response, st.session_state.memory = api_functions.chat_with_memory_and_rag(user_input, st.session_state.memory)
+            # (UI)会話履歴に追加
+            st.session_state.messages.append(
+                {"role": "user", "content": user_input}
+            )
+            # (UI)会話履歴に追加
+            st.session_state.messages.append(
+                {"role": "assistant", "content": response}
+            )
+            print(response)
+
+    # (UI)会話履歴を表示
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])

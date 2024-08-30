@@ -1,4 +1,4 @@
-import streamlit as st
+# import streamlit as st
 
 # ボタンのCSS
 button_css = f"""
@@ -33,6 +33,12 @@ heading_css = f"""
     margin-bottom: 16px               ;/* 下余白：16ピクセル                */
     border-bottom: 2px solid #dddddd  ;/* 下線：薄いグレーで2ピクセルの実線 */
     padding-bottom: 8px               ;/* 下の内側余白：8ピクセル           */
+    # position      : fixed              ;/* 固定位置に設定                    */
+    # top           : 0                  ;/* 上端からの距離                    */
+    # left          : 0                  ;/* 左端からの距離                    */
+    # width         : 100%               ;/* 幅を全幅に設定                    */
+    # background-color: white            ;/* 背景色：白                       */
+    # z-index       : 1000               ;/* 他の要素よりも前面に表示          */
   }}
 
   h2 {{
