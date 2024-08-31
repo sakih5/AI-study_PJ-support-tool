@@ -10,7 +10,6 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_chroma import Chroma
 
 from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
 
 import os
 os.environ['OPENAI_API_KEY'] = 'sk-proj-3pSCJqVVn8lRccIMTfXFT3BlbkFJvB0pdZtI3qOHc4EmWKKV'
@@ -32,8 +31,6 @@ os.environ['OPENAI_API_KEY'] = 'sk-proj-3pSCJqVVn8lRccIMTfXFT3BlbkFJvB0pdZtI3qOH
 def initialize_model(model_name):
     if model_name == 'gpt-4o-mini':
         return ChatOpenAI(model=model_name)
-    elif model_name == 'claude':
-        return ChatAnthropic(model=model_name)
     elif model_name == 'text-embedding-ada-002':
         return OpenAIEmbeddings(model='text-embedding-ada-002')
     else:
