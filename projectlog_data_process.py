@@ -27,7 +27,11 @@ def save_uploaded_docx_data(uploaded_file):
 
     save_dir = Path("Project log")
     save_dir.mkdir(exist_ok=True)
-    save_path = save_dir / f"{TODAY}_{uploaded_file.stem}.txt"
+
+    print(type(uploaded_file))
+    print(type(uploaded_file.name))
+    print(type(uploaded_file.name))
+    save_path = save_dir / f"{TODAY}_{uploaded_file.name}.txt"
 
     with open(save_path, "wb") as f:
         f.write(user_input)

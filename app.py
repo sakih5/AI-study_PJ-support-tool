@@ -52,7 +52,7 @@ if selected_page == pages[0]:
     input_dir = Path("Input")
     st.markdown("<h2>1. 確認 or 編集したいマニュアルファイルを選択してください。</h2>", unsafe_allow_html=True)
     
-    file = st.selectbox('',list(input_dir.glob("*.xlsx")))
+    file = st.selectbox('hogehoge',list(input_dir.glob("*.xlsx")),label_visibility = 'hidden')
     df = pd.read_excel(file)
     cols = df.columns
 
@@ -67,13 +67,13 @@ if selected_page == pages[0]:
     with col1:
         options = df[cols[1]].unique().tolist()
         options.append('その他(新規作成)')
-        new_value1 = st.selectbox(cols[1], options)
+        new_value1 = st.selectbox(cols[1], options, label_visibility = 'hidden')
         # 「その他」が選択された場合、自由入力用のテキストボックスを表示
         if new_value1 == 'その他(新規作成)':
-            custom_input = st.text_input('カテゴリ(自由記述):')
+            custom_input = st.text_input('カテゴリ(自由記述):', label_visibility = 'hidden')
             new_value1 = custom_input  # 入力された内容を選択されたオプションとして設定
     with col2:
-        new_value2 = st.text_input(f'{cols[2]}(自由記述)')
+        new_value2 = st.text_input(f'{cols[2]}(自由記述)', label_visibility = 'hidden')
     
     # 更新ボタンを表示
     if st.button("マニュアルを追加・更新する"):
@@ -114,7 +114,7 @@ elif selected_page == pages[1]:
     st.title(pages[1])
 
     # テキストの入力の仕方を設定
-    option = st.radio('1. テキストをどう入力しますか？', ('ベタ打ち', 'ファイルアップロード'))
+    option = st.radio('1. テキストをどう入力しますか？', ('ベタ打ち', 'ファイルアップロード'), label_visibility = 'hidden')
 
     # テキストエリアを表示
     if option == 'ベタ打ち':

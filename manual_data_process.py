@@ -20,7 +20,7 @@ def _build_vector_database(df, file):
     chroma_db = Chroma(
         collection_name='manual_collection',
         embedding_function=OpenAIEmbeddings(model='text-embedding-ada-002'),
-        persist_directory='./.data',
+        persist_directory='./.data_manual',
         )
 
     # ベクトルデータベースにドキュメントを追加)

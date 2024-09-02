@@ -68,7 +68,7 @@ def complete_todo_list(input_text, model_name='gpt-4o-mini'):
     database = Chroma(
             collection_name='manual_collection', 
             embedding_function=OpenAIEmbeddings(model="text-embedding-ada-002"),
-            persist_directory="./.data",
+            persist_directory="./.data_manual",
         )
 
     # 文字列を1行ずつ分割
@@ -79,7 +79,7 @@ def complete_todo_list(input_text, model_name='gpt-4o-mini'):
 
     for line in lines:
         # 類似チャンクを検索。結果はリスト型(リストの中は(result,score)のタプル)
-        docs = database.similarity_search_with_relevance_scores(line, k=10)
+        docs = database.similarity_search_with_relevance_scores(line, k=10, score_threshold=0.9)
 
         # スコアがMaxのコンテキストをまとめる
         contexts = ""
@@ -140,7 +140,7 @@ def search_relevant_manual(query, model_name='text-embedding-ada-002'):
 
     # ChromaDBへの接続
     chroma_db = Chroma(
-        collection_name='text_collection',
+        collection_name='manual_collection',
         embedding_function=model,
         persist_directory='./.data_manual'
     )
