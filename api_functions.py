@@ -14,6 +14,9 @@ from langchain_openai import ChatOpenAI
 import os
 os.environ['OPENAI_API_KEY'] = 'sk-proj-3pSCJqVVn8lRccIMTfXFT3BlbkFJvB0pdZtI3qOHc4EmWKKV'
 
+import data_process_operation_manuals
+import data_process_project_logs
+
 # ストリーミング表示
 # class SimpleStreamlitCallbackHandler(BaseCallbackHandler):
 #     """ Copied only streaming part from StreamlitCallbackHandler """
@@ -60,15 +63,16 @@ def generate_todo_list(input_text, model_name='gpt-4o-mini'):
     return todo_list.content
 
 
-def complete_todo_list(input_text, model_name='gpt-4o-mini'):
+def complete_todo_list(input_text, model_chat='gpt-4o-mini', model_embedding='text-embedding-ada-002'):
     # モデルの初期化
-    model = initialize_model(model_name)
+    model_chat = initialize_model(model_chat)
+    model_embedding = initialize_model(model_embedding)
 
     # ベクトルデータベースの読み込み
     database = Chroma(
-            collection_name='manual_collection', 
-            embedding_function=OpenAIEmbeddings(model="text-embedding-ada-002"),
-            persist_directory="./.data_manual",
+            collection_name= data_process_operation_manuals.DB_NAME, 
+            embedding_function=model_embedding,
+            persist_directory=data_process_operation_manuals.DB_DIR
         )
 
     # 文字列を1行ずつ分割
@@ -79,7 +83,7 @@ def complete_todo_list(input_text, model_name='gpt-4o-mini'):
 
     for line in lines:
         # 類似チャンクを検索。結果はリスト型(リストの中は(result,score)のタプル)
-        docs = database.similarity_search_with_relevance_scores(line, k=10, score_threshold=0.9)
+        docs = database.similarity_search_with_relevance_scores(line, score_threshold=0.8)
 
         # スコアがMaxのコンテキストをまとめる
         contexts = ""
@@ -92,7 +96,9 @@ def complete_todo_list(input_text, model_name='gpt-4o-mini'):
         # プロンプトテンプレートの定義
         prompt_template = "タスクに業務マニュアルに沿った情報を補完せよ。\
                         補完時の注意事項 \
-                        1. 「タスク名(氏名)」の下の行に、「※補足：」から始まる形で業務マニュアルに沿った補足を追記すること。\
+                        1. 「タスク名(氏名)」の下の行に、「※補足：」から始まる形で以下の「関連業務マニュアル」に沿った補足を追記すること。\
+                        2. 補足情報は、関連業務マニュアルの内容を参考にして、わかりやすく追記すること。\
+                        3. 補足情報は、関連業務マニュアルの内容以外の情報は書かないこと。\
                         :\n\n{line} \
                         \n\n関連業務マニュアル:{context}"
         # メッセージの作成
@@ -102,7 +108,7 @@ def complete_todo_list(input_text, model_name='gpt-4o-mini'):
         ]
 
         # 生成AIモデルから返事を取得
-        completed_todo = model.invoke(messages)
+        completed_todo = model_chat.invoke(messages)
         concatenated_text += completed_todo.content + "\n\n"
 
     return concatenated_text
@@ -134,15 +140,15 @@ def group_todo_list(input_text, model_name='gpt-4o-mini'):
     # AIMessageオブジェクトのcontentを抽出して出力
     return todo_list.content
 
-def search_relevant_manual(query, model_name='text-embedding-ada-002'):
+def search_relevant_manual(query, model_embedding = 'text-embedding-ada-002'):
     # モデルの初期化
-    model = initialize_model(model_name)
+    model = initialize_model(model_embedding)
 
     # ChromaDBへの接続
     chroma_db = Chroma(
-        collection_name='manual_collection',
-        embedding_function=model,
-        persist_directory='./.data_manual'
+        collection_name = data_process_operation_manuals.DB_NAME,
+        embedding_function = model,
+        persist_directory = data_process_operation_manuals.DB_DIR
     )
 
     # クエリをベクトル化して検索
@@ -159,15 +165,16 @@ def init_memory():
     return memory
 
 
-def chat_with_memory_and_rag(user_input, memory, model_name='gpt-4o-mini'):
+def chat_with_memory_and_rag(user_input, memory, model_chat = 'gpt-4o-mini', model_embedding = 'text-embedding-ada-002'):
     # モデルの初期化
-    model = initialize_model(model_name)
+    model_chat = initialize_model(model_chat)
+    model_embedding = initialize_model(model_embedding)
 
     # ChromaDBへの接続
     chroma_db = Chroma(
-        collection_name='projectlog_collection',
-        embedding_function=OpenAIEmbeddings(model='text-embedding-ada-002'),
-        persist_directory='./.data_projectlog',
+        collection_name = data_process_project_logs.DB_NAME,
+        embedding_function = model_embedding,
+        persist_directory = data_process_project_logs.DB_DIR
     )
 
     # ChromaDBをretrieverに変換
@@ -189,7 +196,7 @@ def chat_with_memory_and_rag(user_input, memory, model_name='gpt-4o-mini'):
     )
 
     history_aware_retriever = create_history_aware_retriever(
-        model, retriever, contextualize_q_prompt
+        model_chat, retriever, contextualize_q_prompt
     )
 
     # RAGを使って質問に回答するよう指示
@@ -208,7 +215,7 @@ def chat_with_memory_and_rag(user_input, memory, model_name='gpt-4o-mini'):
     )
 
     question_answer_chain = create_stuff_documents_chain(
-        model, qa_prompt
+        model_chat, qa_prompt
     )
 
     rag_chain = create_retrieval_chain(
@@ -234,3 +241,25 @@ def chat_with_memory_and_rag(user_input, memory, model_name='gpt-4o-mini'):
     return response['answer'], memory
 
 
+def generate_filename(input_text, model_name='gpt-4o-mini'):
+    # モデルの初期化
+    model = initialize_model(model_name)
+
+    # プロンプトテンプレートの定義
+    prompt_template = "以下のテキストを読んでふさわしいファイル名を出力せよ。\
+                    生成時の注意事項 \
+                    1. ファイル名だけを出力すること。他の要素は何も出力しないこと。\
+                    2. ファイル名は日本語で、20字以内とすること。 \
+                    3. ファイル名には、テキストの内容を表すような名前を付けること。\
+                    :\n\n{input_text}"
+    # メッセージの作成
+    messages = [
+        SystemMessage(content="あなたは優秀なファイル命名者です。テキストを読んでふさわしいファイル名を付けることができます。"),
+        HumanMessage(content=prompt_template.format(input_text=input_text))
+    ]
+
+    # 生成AIモデルから返事を取得
+    file_name = model.invoke(messages)
+
+    # AIMessageオブジェクトのcontentを抽出して出力
+    return file_name.content
