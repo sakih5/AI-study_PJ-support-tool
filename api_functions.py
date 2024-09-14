@@ -106,7 +106,8 @@ def complete_todo_list(input_text, model_chat='gpt-4o-mini', model_embedding='te
             SystemMessage(content="あなたはプロジェクトリーダーです。業務マニュアルに沿った補足情報を追加して、部下にわかりやすくタスクを振ることができます。"),
             HumanMessage(content=prompt_template.format(line=line, context=contexts))
         ]
-
+        print("complete_todo_listのmessages")
+        print(messages)
         # 生成AIモデルから返事を取得
         completed_todo = model_chat.invoke(messages)
         concatenated_text += completed_todo.content + "\n\n"

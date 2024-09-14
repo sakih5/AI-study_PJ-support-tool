@@ -1,7 +1,7 @@
-__import__('pysqlite3')
-import sys
-
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+# デプロイ時には以下の3行を有効化すること
+# __import__('pysqlite3')
+# import sys
+# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import streamlit as st
 
@@ -22,6 +22,7 @@ PROJECT_LOGS_PATH = Path('Project logs')
 # クラスをインスタンス化
 manual_process = streamlit_components.ManualProcess()
 project_log_process = streamlit_components.ProjectLogProcess()
+css_style = streamlit_components.CSSStyle()
 
 # Streamlitのページ設定
 st.set_page_config(
@@ -31,9 +32,9 @@ st.set_page_config(
 )
 
 # CSSをStreamlitに反映
-st.markdown(streamlit_components.button_css, unsafe_allow_html=True)
-st.markdown(streamlit_components.heading_css, unsafe_allow_html=True)
-st.markdown(streamlit_components.paragraph_css, unsafe_allow_html=True)
+st.markdown(css_style.button_css, unsafe_allow_html=True)
+st.markdown(css_style.heading_css, unsafe_allow_html=True)
+st.markdown(css_style.paragraph_css, unsafe_allow_html=True)
 
 # サイドバーの一番上にタイトルを表示
 st.sidebar.markdown(f"<h2>{TOOL_NAME}</h2>", unsafe_allow_html=True)
@@ -222,11 +223,40 @@ elif selected_page == pages[4]:
     st.write("PJチャットボットページです。")
 
     st.markdown("<h2>1. Project logのベクトルデータベースを更新してください。</h2>", unsafe_allow_html=True)
+
+    if PROJECT_LOGS_PATH.exists() and PROJECT_LOGS_PATH.is_dir():
+        # txtファイルの一覧を取得
+        txt_files = [f.name for f in PROJECT_LOGS_PATH.glob("*.txt")]
+        
+        if txt_files:
+            # ファイル名を選択するセレクトボックス
+            st.markdown("<p>中身を見たいファイルを選んでください。</p>", unsafe_allow_html=True)
+            selected_file = st.selectbox("hogehoge", txt_files, label_visibility = 'hidden') # label_visibility = 'hidden'を入れているのでhogehogeは表示されない
+            
+            if selected_file:
+                # ファイルの内容を表示
+                file_path = PROJECT_LOGS_PATH / selected_file
+                with file_path.open("r", encoding="utf-8") as file:
+                    content = file.read()
+                    st.text_area(f"「{selected_file}」はこちらです。", content, height=200)
+        else:
+            st.warning(f"「{PROJECT_LOGS_PATH}」フォルダにtxtファイルがありません。")
+    else:
+        st.error(f"「{PROJECT_LOGS_PATH}」フォルダが存在しません。")
+
+    st.markdown("<p>削除したいテキストファイルがあれば選択してください(複数選択可)。</p>", unsafe_allow_html=True)
+    selected_txt_files = st.multiselect('hogehoge', txt_files, label_visibility = 'hidden') # label_visibility = 'hidden'を入れているのでhogehogeは表示されない
+    if st.button("削除"):
+        for txt_file in selected_txt_files:
+            file_path = PROJECT_LOGS_PATH / txt_file
+            file_path.unlink()
+        st.success("選択したテキストファイルが削除されました！")
+
     if st.button("Project logのベクトルデータベースを更新する"):
         data_process_project_logs.build_vector_database()
         st.success("ベクトルデータベースが更新されました！")
 
-    st.markdown("<h2>2. こちらでProject logのベクトルデータベースに基づいた回答ができます。</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>2. こちらでProject logのベクトルデータベースに基づいた回答が得られます。</h2>", unsafe_allow_html=True)
     # (LLM)チャットメモリの初期化 ←if文に入れておくことでセッション間は1度しか実行されない
     if "memory" not in st.session_state:
         memory = api_functions.init_memory()
@@ -237,7 +267,7 @@ elif selected_page == pages[4]:
         st.session_state.messages = []
 
     # (UI)チャット入力ボックスを表示
-    user_input = st.chat_input("Ask something about the file.")
+    user_input = st.chat_input("メッセージを入力してください。例)○○の資料作成について、背景情報を教えてください。")
     if user_input:
         if "memory" in st.session_state:
             # (LLM)メモリに基づく返答の作成
