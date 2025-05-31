@@ -1,0 +1,1 @@
+LangChainとChromaDBでタスク設計ツールを作成。
