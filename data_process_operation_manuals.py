@@ -5,9 +5,15 @@ from langchain_core.documents import Document
 import pandas as pd
 from pathlib import Path
 import os
-os.environ['OPENAI_API_KEY'] = 'sk-proj-3pSCJqVVn8lRccIMTfXFT3BlbkFJvB0pdZtI3qOHc4EmWKKV'
+from dotenv import load_dotenv
 
 
+# .envファイルを読み込む
+load_dotenv()
+
+
+# 環境変数を取得
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 MODEL_NAME = 'text-embedding-ada-002'
 DB_NAME = 'collection_operation_manuals'
 DB_DIR = './.data_operation_manuals'

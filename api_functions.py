@@ -12,10 +12,17 @@ from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI
 
 import os
-os.environ['OPENAI_API_KEY'] = 'sk-proj-3pSCJqVVn8lRccIMTfXFT3BlbkFJvB0pdZtI3qOHc4EmWKKV'
+from dotenv import load_dotenv
 
 import data_process_operation_manuals
 import data_process_project_logs
+
+
+# .envファイルを読み込む
+load_dotenv()
+# 環境変数を取得
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
 
 # ストリーミング表示
 # class SimpleStreamlitCallbackHandler(BaseCallbackHandler):
@@ -30,6 +37,7 @@ import data_process_project_logs
 #         self.tokens_stream += token
 #         self.tokens_area.markdown(self.tokens_stream)
 # handler = SimpleStreamlitCallbackHandler()
+
 
 def initialize_model(model_name):
     if model_name == 'gpt-4o-mini':
